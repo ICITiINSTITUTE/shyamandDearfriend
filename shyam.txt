@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo & Video Uploader</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background:#f7f7f7;
+        padding:20px;
+        margin:0;
+    }
+    h2 {text-align:center;}
+    .upload-box {
+        border:2px dashed #777;
+        background:#fff;
+        padding:25px;
+        text-align:center;
+        border-radius:10px;
+        cursor:pointer;
+        transition:.2s;
+    }
+    .upload-box:hover { border-color:#111; }
+
+    input[type=file] {
+        display:none;
+    }
+
+    .gallery {
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+        gap:10px;
+        margin-top:20px;
+    }
+    .media-item {
+        position:relative;
+        border-radius:8px;
+        overflow:hidden;
+        background:#000;
+    }
+    .media-item img,
+    .media-item video {
+        width:100%;
+        display:block;
+    }
+    .remove-btn {
+        position:absolute;
+        top:5px;
+        right:5px;
+        background:red;
+        color:#fff;
+        border:none;
+        padding:5px 8px;
+        font-size:12px;
+        border-radius:5px;
+        cursor:pointer;
+    }
+
+    @media(max-width:600px){
+        .gallery {grid-template-columns:repeat(auto-fill,minmax(120px,1fr));}
+    }
+</style>
+
+</head>
+<body>
+
+<h2>📸 Photo & 📹 Video Uploader</h2>
+
+<label class="upload-box" for="fileInput">
+    Click or Drag Photos & Videos Here <br>
+    <small>(Images: jpg/png | Videos: mp4)</small>
+</label>
+<input type="file" id="fileInput" multiple accept="image/*,video/*">
+
+<div class="gallery" id="gallery"></div>
+
+<script>
+    let galleryData = JSON.parse(localStorage.getItem("mediaGallery")) || [];
+
+    const fileInput = document.getElementById("fileInput");
+    const gallery = document.getElementById("gallery");
+
+    fileInput.addEventListener("change", handleFiles);
+
+    document.querySelector(".upload-box").addEventListener("dragover", (e)=>{
+        e.preventDefault();
+    });
+    document.querySelector(".upload-box").addEventListener("drop", (e)=>{
+        e.preventDefault();
+        handleFiles({target:{files:e.dataTransfer.files}});
+    });
+
+    function handleFiles(e){
+        const files = e.target.files;
+        Array.from(files).forEach(file=>{
+            const reader = new FileReader();
+            reader.onload = ()=>{
+                const media = {
+                    type: file.type.startsWith("image") ? "image" : "video",
+                    src: reader.result
+                };
+                galleryData.push(media);
+                saveAndRender();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function saveAndRender(){
+        localStorage.setItem("mediaGallery", JSON.stringify(galleryData));
+        renderGallery();
+    }
+
+    function renderGallery(){
+        gallery.innerHTML="";
+        galleryData.forEach((item,index)=>{
+            const div = document.createElement("div");
+            div.className="media-item";
+
+            if(item.type === "image"){
+                div.innerHTML = `<img src="${item.src}">`;
+            } else {
+                div.innerHTML = `<video controls src="${item.src}"></video>`;
+            }
+
+            const btn = document.createElement("button");
+            btn.innerText="X";
+            btn.className="remove-btn";
+            btn.onclick = ()=>{
+                galleryData.splice(index,1);
+                saveAndRender();
+            };
+
+            div.appendChild(btn);
+            gallery.appendChild(div);
+        });
+    }
+
+    renderGallery();
+</script>
+
+</body>
+</html>
